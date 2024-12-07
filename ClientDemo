@@ -1,0 +1,83 @@
+package com.klef.jfsd.exam;
+
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
+
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
+
+public class ClientDemo {
+    public static void main(String[] args) {
+        Configuration configuration = new Configuration();
+        configuration.configure("hibernate.cfg.xml");
+
+        SessionFactory sessionFactory = configuration.buildSessionFactory();
+        Session session = sessionFactory.openSession();
+        Transaction transaction = session.beginTransaction();
+
+        // Insert records
+        insertRecords(session);
+
+        // Perform aggregate operations on Budget
+        performAggregateOperations(session);
+
+        transaction.commit();
+        session.close();
+        sessionFactory.close();
+    }
+
+    private static void insertRecords(Session session) {
+        Project project1 = new Project();
+        project1.setProjectName("Project Alpha");
+        project1.setDuration(12);
+        project1.setBudget(50000);
+        project1.setTeamLead("Alice");
+
+        Project project2 = new Project();
+        project2.setProjectName("Project Beta");
+        project2.setDuration(6);
+        project2.setBudget(30000);
+        project2.setTeamLead("Bob");
+
+        session.persist(project1);
+        session.persist(project2);
+    }
+
+    private static void performAggregateOperations(Session session) {
+        HibernateCriteriaBuilder builder = session.getCriteriaBuilder();
+
+        // Count
+        CriteriaQuery<Long> countQuery = builder.createQuery(Long.class);
+        countQuery.select(builder.count(countQuery.from(Project.class)));
+        Long projectCount = session.createQuery(countQuery).getSingleResult();
+        System.out.println("Count of Projects: " + projectCount);
+
+        // Max
+        CriteriaQuery<Double> maxQuery = builder.createQuery(Double.class);
+        Root<Project> root = maxQuery.from(Project.class);
+        maxQuery.select(builder.max(root.get("budget")));
+        Double maxBudget = session.createQuery(maxQuery).getSingleResult();
+        System.out.println("Max Budget: " + maxBudget);
+
+        // Min
+        CriteriaQuery<Double> minQuery = builder.createQuery(Double.class);
+        minQuery.select(builder.min(root.get("budget")));
+        Double minBudget = session.createQuery(minQuery).getSingleResult();
+        System.out.println("Min Budget: " + minBudget);
+
+        // Sum
+        CriteriaQuery<Double> sumQuery = builder.createQuery(Double.class);
+        sumQuery.select(builder.sum(root.get("budget")));
+        Double sumBudget = session.createQuery(sumQuery).getSingleResult();
+        System.out.println("Sum of Budgets: " + sumBudget);
+
+        // Average
+        CriteriaQuery<Double> avgQuery = builder.createQuery(Double.class);
+        avgQuery.select(builder.avg(root.get("budget")));
+        Double avgBudget = session.createQuery(avgQuery).getSingleResult();
+        System.out.println("Average Budget: " + avgBudget);
+    }
+}
